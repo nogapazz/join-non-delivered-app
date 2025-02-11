@@ -1,11 +1,36 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
+import base64
+
+# Function to set the background image
+def set_background(image_path):
+    st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background: url("{image_path}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }}
+        h1, h2, h3, label {{
+            color: white !important;
+        }}
+        .uploadedFile {{
+            color: white !important;
+            font-size: 14px;
+            text-align: left;
+        }}
+        .stFileUploader div {{
+            text-align: center;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
 # Load the "All Contacts" file from Streamlit secrets storage
-import base64
-from io import BytesIO
-
 @st.cache_data
 def load_contacts():
     encoded_data = st.secrets["all_contacts"]["content"]  # Retrieve Base64 data
@@ -14,6 +39,10 @@ def load_contacts():
 
 # App Title
 st.title("Join Non-Delivered Emails with Account & CS Owner Details")
+
+# Set background image
+background_image_path = "assets/background.png"  # Ensure the image is uploaded to the 'assets' folder in your repo
+set_background(background_image_path)
 
 # File upload for Non-Deliverable List
 st.subheader("Upload the Non-Deliverable List (Excel File)")
@@ -56,5 +85,3 @@ if non_deliverable_file:
         file_name="joined_file.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
-
-
