@@ -3,9 +3,14 @@ import pandas as pd
 from io import BytesIO
 
 # Load the "All Contacts" file from Streamlit secrets storage
+import base64
+from io import BytesIO
+
 @st.cache_data
 def load_contacts():
-    return pd.read_excel("All_contacts.xlsx")  # This will be stored privately in Streamlit secrets
+    encoded_data = st.secrets["all_contacts"]["content"]  # Retrieve Base64 data
+    decoded_bytes = base64.b64decode(encoded_data)  # Decode it
+    return pd.read_excel(BytesIO(decoded_bytes))  # Load it as an Excel file
 
 # App Title
 st.title("Join Non-Delivered Emails with Account & CS Owner Details")
@@ -51,3 +56,5 @@ if non_deliverable_file:
         file_name="joined_file.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
+
+
