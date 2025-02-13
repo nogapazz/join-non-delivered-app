@@ -1,7 +1,19 @@
 import streamlit as st
-import pandas as pd
-from io import BytesIO
 import base64
+from io import BytesIO
+import pandas as pd
+
+# Read Base64 content from secrets.toml
+encoded_data = st.secrets["all_contacts"]["content"]
+
+# Decode the Base64 string
+file_bytes = base64.b64decode(encoded_data)
+
+# Convert to Pandas DataFrame
+df = pd.read_excel(BytesIO(file_bytes))
+
+# Display the data (for testing)
+st.write(df)
 
 def set_background(image_path):
     with open(image_path, "rb") as f:
