@@ -3,33 +3,23 @@ import pandas as pd
 from io import BytesIO
 import base64
 
-# Function to set the background image
 def set_background(image_path):
-    st.markdown(
-        f"""
-        <style>
-        .stApp {{
-            background: url("{image_path}");
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-        }}
-        h1, h2, h3, label {{
-            color: white !important;
-        }}
-        .uploadedFile {{
-            color: white !important;
-            font-size: 14px;
-            text-align: left;
-        }}
-        .stFileUploader div {{
-            text-align: center;
-        }}
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+    with open(image_path, "rb") as f:
+        encoded_image = base64.b64encode(f.read()).decode()
+    
+    bg_css = f"""
+    <style>
+    .stApp {{
+        background-image: url("data:image/png;base64,{encoded_image}");
+        background-size: cover;
+    }}
+    </style>
+    """
+    st.markdown(bg_css, unsafe_allow_html=True)
 
+# Call the function
+background_image_path = "assets/background.png"
+set_background(background_image_path)
 # Load the "All Contacts" file from Streamlit secrets storage
 @st.cache_data
 def load_contacts():
@@ -41,7 +31,7 @@ def load_contacts():
 st.title("Join Non-Delivered Emails with Account & CS Owner Details")
 
 # Set background image
-background_image_path = "assets/background.png"  # Ensure the image is uploaded to the 'assets' folder in your repo
+background_image_path = "assets/background.png" 
 set_background(background_image_path)
 
 # File upload for Non-Deliverable List
