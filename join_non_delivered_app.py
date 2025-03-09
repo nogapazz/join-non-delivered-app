@@ -2,6 +2,9 @@ import streamlit as st
 import base64
 from io import BytesIO
 import pandas as pd
+from openpyxl import Workbook
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.styles import PatternFill
 
 # Load contacts function (securely retrieves the secret file)
 @st.cache_data
@@ -14,10 +17,10 @@ def load_contacts():
 def load_uploaded_file(uploaded_file):
     if uploaded_file.name.endswith('.csv'):
         return pd.read_csv(uploaded_file)
-    elif uploaded_file.name.endswith('.xlsx'):
+    elif uploaded_file.name.endswith(('.xlsx', '.xls')):
         return pd.read_excel(uploaded_file, engine='openpyxl')
     else:
-        st.error("Unsupported file format. Please upload a .csv or .xlsx file.")
+        st.error("Unsupported file format. Please upload a .csv, .xls or .xlsx file.")
         st.stop()
 
 # Set background image function
@@ -44,7 +47,7 @@ st.title("Join Non-Delivered Emails with Account & CS Owner Details")
 
 # File upload for Non-Deliverable List
 st.subheader("Upload the Non-Deliverable List (Excel or CSV)")
-non_deliverable_file = st.file_uploader("Upload your file", type=["csv", "xlsx"], key="file1")
+non_deliverable_file = st.file_uploader("Upload your file", type=["csv", "xlsx", "xls"], key="file1")
 
 if non_deliverable_file:
     # Load the uploaded file
@@ -64,6 +67,10 @@ if non_deliverable_file:
     # Drop the Email column since we already have Recipient
     joined_df = joined_df.drop(columns=["Email"], errors="ignore")
 
+    # Sort by 'CS Owner' column (if exists)
+    if 'CS Owner' in joined_df.columns:
+        joined_df = joined_df.sort_values(by='CS Owner')
+
     # Display success message and preview
     st.success("Files joined successfully!")
     st.write("Preview of the joined file:")
@@ -72,9 +79,36 @@ if non_deliverable_file:
     # Convert joined data to CSV and XLSX
     csv_buffer = joined_df.to_csv(index=False).encode('utf-8')
 
+    # Create formatted Excel file with table style and row coloring
     excel_buffer = BytesIO()
-    with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-        joined_df.to_excel(writer, index=False)
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Joined Data"
+
+    # Write data with alternating colors
+    rows = dataframe_to_rows(joined_df, index=False, header=True)
+
+    # Custom Colors for CS Owners
+    color_map = {}
+    color_palette = [
+        "FFDDDD", "DDEEFF", "E0F7FA", "FCE4EC", "FFF3E0", "E8F5E9", "F3E5F5", "E3F2FD"
+    ]
+    
+    for r_idx, row in enumerate(rows, 1):
+        sheet.append(row)
+        if r_idx == 1:  # Header row
+            continue
+        cs_owner = row[3] if len(row) > 3 else None
+        if cs_owner not in color_map:
+            color_map[cs_owner] = color_palette[len(color_map) % len(color_palette)]
+        for c_idx in range(1, len(row) + 1):
+            sheet.cell(row=r_idx, column=c_idx).fill = PatternFill(
+                start_color=color_map[cs_owner],
+                end_color=color_map[cs_owner],
+                fill_type="solid"
+            )
+
+    workbook.save(excel_buffer)
     excel_buffer.seek(0)
 
     # Provide download buttons
@@ -92,7 +126,3 @@ if non_deliverable_file:
         file_name="joined_file.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-
-    # Optional: Open in Google Sheets (via a public upload link)
-    google_sheets_link = "https://docs.google.com/spreadsheets/u/0/create"
-    st.markdown(f"[📄 Open in Google Sheets]( {google_sheets_link} )", unsafe_allow_html=True)
