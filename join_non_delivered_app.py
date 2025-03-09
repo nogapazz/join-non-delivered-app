@@ -129,14 +129,14 @@ if non_deliverable_file:
     # Provide download buttons
     st.subheader("Download Options")
     st.download_button(
-        label="📥 Download as CSV",
+        label="📥 Download as CSV - No colored rows by CS Owner ⚫⚪",
         data=csv_buffer,
         file_name="joined_file.csv",
         mime="text/csv"
     )
 
     st.download_button(
-        label="📥 Download as Excel (XLSX)",
+        label="📥 Download as Excel (XLSX) - Colored rows by CS Owner 🎨",
         data=excel_buffer,
         file_name="joined_file.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
