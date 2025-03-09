@@ -69,17 +69,30 @@ if non_deliverable_file:
     st.write("Preview of the joined file:")
     st.dataframe(joined_df.head(10))  # Show only 10 rows for privacy
 
-    # Convert to Excel for download
-    buffer = BytesIO()
-    with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-        joined_df.to_excel(writer, index=False)
-    buffer.seek(0)
+    # Convert joined data to CSV and XLSX
+    csv_buffer = joined_df.to_csv(index=False).encode('utf-8')
 
-    # Provide download button
-    st.subheader("Download the Joined File")
+    excel_buffer = BytesIO()
+    with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+        joined_df.to_excel(writer, index=False)
+    excel_buffer.seek(0)
+
+    # Provide download buttons
+    st.subheader("Download Options")
     st.download_button(
-        label="Download Joined File",
-        data=buffer,
-        file_name="joined_file.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        label="📥 Download as CSV",
+        data=csv_buffer,
+        file_name="joined_file.csv",
+        mime="text/csv"
     )
+
+    st.download_button(
+        label="📥 Download as Excel (XLSX)",
+        data=excel_buffer,
+        file_name="joined_file.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+    # Optional: Open in Google Sheets (via a public upload link)
+    google_sheets_link = "https://docs.google.com/spreadsheets/u/0/create"
+    st.markdown(f"[📄 Open in Google Sheets]( {google_sheets_link} )", unsafe_allow_html=True)
