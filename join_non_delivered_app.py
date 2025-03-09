@@ -3,18 +3,24 @@ import base64
 from io import BytesIO
 import pandas as pd
 
-# Read Base64 content from secrets.toml
-encoded_data = st.secrets["all_contacts"]["content"]
+# Load contacts function (securely retrieves the secret file)
+@st.cache_data
+def load_contacts():
+    encoded_data = st.secrets["all_contacts"]["content"]
+    decoded_bytes = base64.b64decode(encoded_data)
+    return pd.read_excel(BytesIO(decoded_bytes), engine='openpyxl')
 
-# Decode the Base64 string
-file_bytes = base64.b64decode(encoded_data)
+# Function to load uploaded file in multiple formats
+def load_uploaded_file(uploaded_file):
+    if uploaded_file.name.endswith('.csv'):
+        return pd.read_csv(uploaded_file)
+    elif uploaded_file.name.endswith('.xlsx'):
+        return pd.read_excel(uploaded_file, engine='openpyxl')
+    else:
+        st.error("Unsupported file format. Please upload a .csv or .xlsx file.")
+        st.stop()
 
-# Convert to Pandas DataFrame
-df = pd.read_excel(BytesIO(file_bytes))
-
-# Display the data (for testing)
-st.write(df)
-
+# Set background image function
 def set_background(image_path):
     with open(image_path, "rb") as f:
         encoded_image = base64.b64encode(f.read()).decode()
@@ -29,30 +35,20 @@ def set_background(image_path):
     """
     st.markdown(bg_css, unsafe_allow_html=True)
 
-# Call the function
+# Call the background function
 background_image_path = "assets/background.png"
 set_background(background_image_path)
-# Load the "All Contacts" file from Streamlit secrets storage
-@st.cache_data
-def load_contacts():
-    encoded_data = st.secrets["all_contacts"]["content"]  # Retrieve Base64 data
-    decoded_bytes = base64.b64decode(encoded_data)  # Decode it
-    return pd.read_excel(BytesIO(decoded_bytes))  # Load it as an Excel file
 
 # App Title
 st.title("Join Non-Delivered Emails with Account & CS Owner Details")
 
-# Set background image
-background_image_path = "assets/background.png" 
-set_background(background_image_path)
-
 # File upload for Non-Deliverable List
-st.subheader("Upload the Non-Deliverable List (Excel File)")
-non_deliverable_file = st.file_uploader("Upload your file", type=["xlsx"], key="file1")
+st.subheader("Upload the Non-Deliverable List (Excel or CSV)")
+non_deliverable_file = st.file_uploader("Upload your file", type=["csv", "xlsx"], key="file1")
 
 if non_deliverable_file:
     # Load the uploaded file
-    non_deliverable_df = pd.read_excel(non_deliverable_file)
+    non_deliverable_df = load_uploaded_file(non_deliverable_file)
 
     # Load the "All Contacts" file from storage
     all_contacts_df = load_contacts()
@@ -71,7 +67,7 @@ if non_deliverable_file:
     # Display success message and preview
     st.success("Files joined successfully!")
     st.write("Preview of the joined file:")
-    st.dataframe(joined_df)
+    st.dataframe(joined_df.head(10))  # Show only 10 rows for privacy
 
     # Convert to Excel for download
     buffer = BytesIO()
