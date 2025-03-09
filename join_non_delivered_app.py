@@ -7,6 +7,18 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.styles import PatternFill, NamedStyle, Font, Border, Side
 import random
 
+import streamlit as st
+from PIL import Image
+
+favicon_path = "assets/favicon.png"
+
+# Set custom favicon
+favicon_path = "favicon.png"  # Update with your image path
+st.set_page_config(
+    page_title="Join Non-Delivered App",
+    page_icon=Image.open(favicon_path)  # Custom favicon
+)
+
 # Load contacts function (securely retrieves the secret file)
 @st.cache_data
 def load_contacts():
