@@ -9,15 +9,22 @@ import random
 
 import streamlit as st
 from PIL import Image
+import os
 
+# Set custom favicon with error handling
 favicon_path = "assets/favicon.png"
 
-# Set custom favicon
-favicon_path = "favicon.png"  # Update with your image path
-st.set_page_config(
-    page_title="Join Non-Delivered App",
-    page_icon=Image.open(favicon_path)  # Custom favicon
-)
+if os.path.exists(favicon_path):
+    st.set_page_config(
+        page_title="Join Non-Delivered App",
+        page_icon=Image.open(favicon_path)  # Custom favicon
+    )
+else:
+    st.set_page_config(
+        page_title="Join Non-Delivered App",
+        page_icon="🟣"  # Emoji fallback in case the file is missing
+    )
+
 
 # Load contacts function (securely retrieves the secret file)
 @st.cache_data
