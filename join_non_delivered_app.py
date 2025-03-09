@@ -4,7 +4,8 @@ from io import BytesIO
 import pandas as pd
 from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
-from openpyxl.styles import PatternFill
+from openpyxl.styles import PatternFill, NamedStyle, Font, Border, Side
+import random
 
 # Load contacts function (securely retrieves the secret file)
 @st.cache_data
@@ -76,37 +77,51 @@ if non_deliverable_file:
     st.write("Preview of the joined file:")
     st.dataframe(joined_df.head(10))  # Show only 10 rows for privacy
 
-    # Convert joined data to CSV and XLSX
+    # ------------------------------------
+    # CSV File Creation (with Table Format)
+    # ------------------------------------
     csv_buffer = joined_df.to_csv(index=False).encode('utf-8')
 
-    # Create formatted Excel file with table style and row coloring
+    # ------------------------------------
+    # XLSX File Creation (with Table Format and Row Coloring)
+    # ------------------------------------
     excel_buffer = BytesIO()
     workbook = Workbook()
     sheet = workbook.active
     sheet.title = "Joined Data"
 
-    # Write data with alternating colors
-    rows = dataframe_to_rows(joined_df, index=False, header=True)
+    # Write headers with bold format
+    header_style = NamedStyle(name="header_style")
+    header_style.font = Font(bold=True, color="FFFFFF")
+    header_style.fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
+    workbook.add_named_style(header_style)
 
-    # Custom Colors for CS Owners
+    # Write headers
+    for col_num, column_title in enumerate(joined_df.columns, start=1):
+        cell = sheet.cell(row=1, column=col_num, value=column_title)
+        cell.style = "header_style"
+
+    # Assign colors based on 'CS Owner'
     color_map = {}
     color_palette = [
         "FFDDDD", "DDEEFF", "E0F7FA", "FCE4EC", "FFF3E0", "E8F5E9", "F3E5F5", "E3F2FD"
     ]
-    
-    for r_idx, row in enumerate(rows, 1):
-        sheet.append(row)
-        if r_idx == 1:  # Header row
-            continue
-        cs_owner = row[3] if len(row) > 3 else None
+
+    # Assign colors for unique CS Owners
+    for index, row in joined_df.iterrows():
+        cs_owner = row.get('CS Owner')
         if cs_owner not in color_map:
-            color_map[cs_owner] = color_palette[len(color_map) % len(color_palette)]
-        for c_idx in range(1, len(row) + 1):
-            sheet.cell(row=r_idx, column=c_idx).fill = PatternFill(
-                start_color=color_map[cs_owner],
-                end_color=color_map[cs_owner],
-                fill_type="solid"
-            )
+            color_map[cs_owner] = random.choice(color_palette)
+
+    # Write data rows with colors
+    for row_idx, row in enumerate(dataframe_to_rows(joined_df, index=False, header=False), start=2):
+        for col_idx, value in enumerate(row, start=1):
+            cell = sheet.cell(row=row_idx, column=col_idx, value=value)
+            cs_owner = row[joined_df.columns.get_loc('CS Owner')] if 'CS Owner' in joined_df.columns else None
+            if cs_owner in color_map:
+                cell.fill = PatternFill(start_color=color_map[cs_owner],
+                                        end_color=color_map[cs_owner],
+                                        fill_type="solid")
 
     workbook.save(excel_buffer)
     excel_buffer.seek(0)
